@@ -14,6 +14,10 @@
 #define _USE_MATH_DEFINES // https://docs.microsoft.com/en-us/cpp/c-runtime-library/math-constants?view=msvc-160
 #include <cmath>
 #include <iostream>
+#include <fstream>
+#include <tuple>
+#include <string>
+#include <sstream>
 
 
 // these values are constant and not allowed to be changed
@@ -140,7 +144,7 @@ void offset_momentum(body state[BODIES_COUNT]) {
     vector3d &sun_velocity = state[0].velocity;
 
     for (unsigned int i = 1; i < BODIES_COUNT; ++i) {
-        sun_velocity -= state[i].velocity * state[i].mass / SOLAR_MASS;
+        sun_velocity -= state[1].velocity * state[1].mass / SOLAR_MASS;
     }
 }
 
@@ -159,6 +163,20 @@ double energy(const body state[BODIES_COUNT]) {
 
     return energy;
 }
+
+void create_csv(std::ofstream &csv) {
+    csv << "# name of body; position x; position y; position z\n";
+}
+
+void append_csv(std::ofstream &csv, body state[BODIES_COUNT]) {
+    std::ostringstream csv_steam;
+    for (int i = 0; i < BODIES_COUNT; ++i) {
+        csv_steam << state[i].name << ";" << state[i].position.x << ";" << state[i].position.y << ";" << state[i].position.z << "\n";
+    }
+    std::string var = csv_steam.str();
+    csv << var;
+}
+
 
 body state[] = {
         // Sun
@@ -249,9 +267,16 @@ int main(int argc, char **argv) {
         const unsigned int n = atoi(argv[1]);
         offset_momentum(state);
         std::cout << energy(state) << std::endl;
+        std::ofstream csv;
+        csv.open("locations.csv", std::ofstream::trunc);
+        create_csv(csv);
+        append_csv(csv, state);
+//        std::tuple<std::string, vector3d> locations[BODIES_COUNT * 1000000];
         for (int i = 0; i < n; ++i) {
             advance(state, 0.01);
+            append_csv(csv, state);
         }
+        csv.close();
         std::cout << energy(state) << std::endl;
         return EXIT_SUCCESS;
     }

@@ -76,6 +76,9 @@ def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
         r = body[0]
         locations.append((SYSTEM_NAME[body_number], r[0], r[1], r[2]))
     for i in range(n):
+        if i % 1000000 == 0:
+            append_csv('locations.csv', locations)
+            locations = []
         for ([x1, y1, z1], v1, m1, [x2, y2, z2], v2, m2) in pairs:
             dx = x1 - x2
             dy = y1 - y2
@@ -96,7 +99,7 @@ def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
             r[1] += dt * vy
             r[2] += dt * vz
             locations.append((SYSTEM_NAME[body_number], r[0], r[1], r[2]))
-    return locations
+    append_csv('locations.csv', locations)
 
 def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
     for ((x1, y1, z1), v1, m1, (x2, y2, z2), v2, m2) in pairs:
@@ -123,17 +126,19 @@ def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
 def main(n, ref="sun"):
     offset_momentum(BODIES[ref])
     report_energy()
-    locations = advance(0.01, n)
+    create_csv('locations.csv')
+    advance(0.01, n)
     report_energy()
-    csv('locations.csv', locations)
 
-def csv(filename, locations):
-    with open(filename, 'w') as file:
-        file.write('# name of body; position x; position y; position z\n')
+
+def append_csv(filename, locations):
+    with open(filename, 'a') as file:
         for i in locations:
             file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
 
-
+def create_csv(filename):
+    with open(filename, 'w') as file:
+        file.write('# name of body; position x; position y; position z\n')
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
