@@ -123,12 +123,9 @@ def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
     v[2] = pz / m
 
 
-def main(n, ref="sun"):
-    offset_momentum(BODIES[ref])
-    report_energy()
-    create_csv('locations.csv')
-    advance(0.01, n)
-    report_energy()
+def create_csv(filename):
+    with open(filename, 'w') as file:
+        file.write('# name of body; position x; position y; position z\n')
 
 
 def append_csv(filename, locations):
@@ -136,9 +133,14 @@ def append_csv(filename, locations):
         for i in locations:
             file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
 
-def create_csv(filename):
-    with open(filename, 'w') as file:
-        file.write('# name of body; position x; position y; position z\n')
+
+def main(n, ref="sun"):
+    offset_momentum(BODIES[ref])
+    report_energy()
+    create_csv('locations.csv')
+    advance(0.01, n)
+    report_energy()
+
 
 if __name__ == "__main__":
     if len(sys.argv) >= 2:

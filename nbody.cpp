@@ -18,6 +18,7 @@
 #include <tuple>
 #include <string>
 #include <sstream>
+#include <vector>
 
 
 // these values are constant and not allowed to be changed
@@ -168,6 +169,16 @@ void create_csv(std::ofstream &csv) {
     csv << "# name of body; position x; position y; position z\n";
 }
 
+void append_csv(std::ofstream &csv, std::vector<std::tuple<std::string, vector3d>> &locations) {
+    std::ostringstream csv_steam;
+    for (auto location: locations) {
+        auto position = get<1>(location);
+        csv_steam << get<0>(location) << ";" << position.x << ";" << position.y << ";" << position.z << "\n";
+    }
+    std::string var = csv_steam.str();
+    csv << var;
+}
+
 void append_csv(std::ofstream &csv, body state[BODIES_COUNT]) {
     std::ostringstream csv_steam;
     for (int i = 0; i < BODIES_COUNT; ++i) {
@@ -271,11 +282,20 @@ int main(int argc, char **argv) {
         csv.open("locations.csv", std::ofstream::trunc);
         create_csv(csv);
         append_csv(csv, state);
-//        std::tuple<std::string, vector3d> locations[BODIES_COUNT * 1000000];
+        std::vector<std::tuple<std::string, vector3d>> locations;
         for (int i = 0; i < n; ++i) {
+            if (i % 1000000 == 0) {
+                append_csv(csv, locations);
+                locations.clear();
+            }
             advance(state, 0.01);
-            append_csv(csv, state);
+            for (int j = 0; j < BODIES_COUNT; ++j) {
+                auto body_location = std::make_tuple(state[j].name, state[j].position);
+                locations.push_back(body_location);
+            }
+
         }
+        append_csv(csv, locations);
         csv.close();
         std::cout << energy(state) << std::endl;
         return EXIT_SUCCESS;
