@@ -25,6 +25,8 @@
 const double SOLAR_MASS = 4 * M_PI * M_PI;
 const double DAYS_PER_YEAR = 365.24;
 const unsigned int BODIES_COUNT = 5;
+const char* FILE_NAME = "locations.csv";
+const unsigned int ITERATIONS_BEFORE_SAVING_TO_FILE = 1e5;
 
 
 class vector3d {
@@ -279,18 +281,18 @@ int main(int argc, char **argv) {
         offset_momentum(state);
         std::cout << energy(state) << std::endl;
         std::ofstream csv;
-        csv.open("locations.csv", std::ofstream::trunc);
+        csv.open(FILE_NAME, std::ofstream::trunc);
         create_csv(csv);
         append_csv(csv, state);
         std::vector<std::tuple<std::string, vector3d>> locations;
         for (int i = 0; i < n; ++i) {
-            if (i % 1000000 == 0) {
+            if (i % ITERATIONS_BEFORE_SAVING_TO_FILE == 0) {
                 append_csv(csv, locations);
                 locations.clear();
             }
             advance(state, 0.01);
-            for (int j = 0; j < BODIES_COUNT; ++j) {
-                auto body_location = std::make_tuple(state[j].name, state[j].position);
+            for (auto & body : state) {
+                auto body_location = std::make_tuple(body.name, body.position);
                 locations.push_back(body_location);
             }
 
