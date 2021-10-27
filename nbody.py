@@ -22,6 +22,8 @@ def combinations(l):
     return result
 
 
+ITERATIONS_BEFORE_SAVING_TO_FILE = 1e5
+FILENAME = 'locations.csv'
 SOLAR_MASS = 4 * PI * PI
 DAYS_PER_YEAR = 365.24
 
@@ -70,14 +72,14 @@ SYSTEM_NAME = tuple(BODIES.keys())
 PAIRS = tuple(combinations(SYSTEM))
 
 
-def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
+def advance(dt, n, file, bodies=SYSTEM, pairs=PAIRS):
     locations = []
     for body_number, body in enumerate(bodies):
         r = body[0]
         locations.append((SYSTEM_NAME[body_number], r[0], r[1], r[2]))
     for i in range(n):
-        if i % 1000000 == 0:
-            append_csv('locations.csv', locations)
+        if i % ITERATIONS_BEFORE_SAVING_TO_FILE == 0:
+            append_csv(file, locations)
             locations = []
         for ([x1, y1, z1], v1, m1, [x2, y2, z2], v2, m2) in pairs:
             dx = x1 - x2
@@ -99,7 +101,7 @@ def advance(dt, n, bodies=SYSTEM, pairs=PAIRS):
             r[1] += dt * vy
             r[2] += dt * vz
             locations.append((SYSTEM_NAME[body_number], r[0], r[1], r[2]))
-    append_csv('locations.csv', locations)
+    append_csv(file, locations)
 
 def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
     for ((x1, y1, z1), v1, m1, (x2, y2, z2), v2, m2) in pairs:
@@ -123,22 +125,21 @@ def offset_momentum(ref, bodies=SYSTEM, px=0.0, py=0.0, pz=0.0):
     v[2] = pz / m
 
 
-def create_csv(filename):
-    with open(filename, 'w') as file:
-        file.write('# name of body; position x; position y; position z\n')
+def create_csv(file):
+    file.write('# name of body; position x; position y; position z\n')
 
 
-def append_csv(filename, locations):
-    with open(filename, 'a') as file:
-        for i in locations:
-            file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
+def append_csv(file, locations):
+    for i in locations:
+        file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
 
 
 def main(n, ref="sun"):
     offset_momentum(BODIES[ref])
     report_energy()
-    create_csv('locations.csv')
-    advance(0.01, n)
+    with open(FILENAME, 'w') as file:
+        create_csv(file)
+        advance(0.01, n, file)
     report_energy()
 
 
