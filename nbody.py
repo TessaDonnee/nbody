@@ -11,6 +11,7 @@
 
 import sys
 from math import sqrt, pi as PI
+from time import perf_counter
 
 
 def combinations(l):
@@ -103,6 +104,28 @@ def advance(dt, n, file, bodies=SYSTEM, pairs=PAIRS):
             locations.append((SYSTEM_NAME[body_number], r[0], r[1], r[2]))
     append_csv(file, locations)
 
+def advance_without_file(dt, n, bodies=SYSTEM, pairs=PAIRS):
+    for i in range(n):
+        for ([x1, y1, z1], v1, m1, [x2, y2, z2], v2, m2) in pairs:
+            dx = x1 - x2
+            dy = y1 - y2
+            dz = z1 - z2
+            dist = sqrt(dx * dx + dy * dy + dz * dz)
+            mag = dt / (dist * dist * dist)
+            b1m = m1 * mag
+            b2m = m2 * mag
+            v1[0] -= dx * b2m
+            v1[1] -= dy * b2m
+            v1[2] -= dz * b2m
+            v2[2] += dz * b1m
+            v2[1] += dy * b1m
+            v2[0] += dx * b1m
+        for body_number, body in enumerate(bodies):
+            (r, [vx, vy, vz], m) = body
+            r[0] += dt * vx
+            r[1] += dt * vy
+            r[2] += dt * vz
+
 def report_energy(bodies=SYSTEM, pairs=PAIRS, e=0.0):
     for ((x1, y1, z1), v1, m1, (x2, y2, z2), v2, m2) in pairs:
         dx = x1 - x2
@@ -131,24 +154,52 @@ def create_csv(file):
 
 def append_csv(file, locations):
     for i in locations:
-        file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
+        file.write(f'{i[0]};{i[1]:.5f};{i[2]:.5f};{i[3]:.5f}\n')
 
+def append_csv_with_time(iteration, file, locations):
+    start_time_append = perf_counter()
+    for i in locations:
+        file.write(f'{i[0]}; {i[1]}; {i[2]}; {i[3]}\n')
+    end_time_append = perf_counter()
+    print(f"Done saving iteration {iteration} to disk, locations: {len(locations)} in {round(end_time_append - start_time_append, 4)}s")
 
 def main(n, ref="sun"):
     offset_momentum(BODIES[ref])
-    report_energy()
+    # report_energy()
     with open(FILENAME, 'w') as file:
         create_csv(file)
         advance(0.01, n, file)
-    report_energy()
+    # report_energy()
+
+
+def main_without_file(n, ref="sun"):
+    offset_momentum(BODIES[ref])
+    # report_energy()
+    advance_without_file(0.01, n)
+    # report_energy()
+
+def time_function():
+    global FILENAME
+    iterations = [5000]
+    for iteration in iterations:
+        iteration = int(iteration)
+        print("---------------------------------------------------------------")
+        FILENAME = f"output/locations-{iteration}.csv"
+        start_time = perf_counter()
+        print(f"Running {iteration}, saving output to {FILENAME}")
+        main(iteration)
+        end_time = perf_counter()
+        print(f"Done running {iteration} in {round(end_time - start_time, 4)}s")
+        print("---------------------------------------------------------------")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 2:
-        main(int(sys.argv[1]))
-        sys.exit(0)
-    else:
-        print(f"This is {sys.argv[0]}")
-        print("Call this program with an integer as program argument")
-        print("(to set the number of iterations for the n-body simulation).")
-        sys.exit(1)
+    time_function()
+    # if len(sys.argv) >= 2:
+    #     main(int(sys.argv[1]))
+    #     sys.exit(0)
+    # else:
+    #     print(f"This is {sys.argv[0]}")
+    #     print("Call this program with an integer as program argument")
+    #     print("(to set the number of iterations for the n-body simulation).")
+    #     sys.exit(1)
