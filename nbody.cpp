@@ -12,6 +12,7 @@
 */
 
 #define _USE_MATH_DEFINES // https://docs.microsoft.com/en-us/cpp/c-runtime-library/math-constants?view=msvc-160
+
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -19,14 +20,15 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <chrono>
 
 
 // these values are constant and not allowed to be changed
 const double SOLAR_MASS = 4 * M_PI * M_PI;
 const double DAYS_PER_YEAR = 365.24;
 const unsigned int BODIES_COUNT = 5;
-const char* FILE_NAME = "locations.csv";
-const unsigned int ITERATIONS_BEFORE_SAVING_TO_FILE = 1e5;
+const char *FILE_NAME = "locations.csv";
+const unsigned int ITERATIONS_BEFORE_SAVING_TO_FILE = 1e6;
 
 
 class vector3d {
@@ -184,7 +186,8 @@ void append_csv(std::ofstream &csv, std::vector<std::tuple<std::string, vector3d
 void append_csv(std::ofstream &csv, body state[BODIES_COUNT]) {
     std::ostringstream csv_steam;
     for (int i = 0; i < BODIES_COUNT; ++i) {
-        csv_steam << state[i].name << ";" << state[i].position.x << ";" << state[i].position.y << ";" << state[i].position.z << "\n";
+        csv_steam << state[i].name << ";" << state[i].position.x << ";" << state[i].position.y << ";"
+                  << state[i].position.z << "\n";
     }
     std::string var = csv_steam.str();
     csv << var;
@@ -269,37 +272,56 @@ body state[] = {
         }
 };
 
-
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        std::cout << "This is " << argv[0] << std::endl;
-        std::cout << "Call this program with an integer as program argument" << std::endl;
-        std::cout << "(to set the number of iterations for the n-body simulation)." << std::endl;
-        return EXIT_FAILURE;
-    } else {
-        const unsigned int n = atoi(argv[1]);
-        offset_momentum(state);
-        std::cout << energy(state) << std::endl;
-        std::ofstream csv;
-        csv.open(FILE_NAME, std::ofstream::trunc);
-        create_csv(csv);
-        append_csv(csv, state);
-        std::vector<std::tuple<std::string, vector3d>> locations;
-        for (int i = 0; i < n; ++i) {
-            if (i % ITERATIONS_BEFORE_SAVING_TO_FILE == 0) {
-                append_csv(csv, locations);
-                locations.clear();
-            }
-            advance(state, 0.01);
-            for (auto & body : state) {
-                auto body_location = std::make_tuple(body.name, body.position);
-                locations.push_back(body_location);
-            }
-
+void simulate_bodies(const unsigned int n, const char *filename) {
+    offset_momentum(state);
+    std::cout << energy(state) << std::endl;
+    std::ofstream csv;
+    csv.open(filename, std::ofstream::trunc);
+    create_csv(csv);
+    append_csv(csv, state);
+    std::vector<std::tuple<std::string, vector3d>> locations;
+    for (int i = 0; i < n; ++i) {
+        if (i % ITERATIONS_BEFORE_SAVING_TO_FILE == 0) {
+            append_csv(csv, locations);
+            locations.clear();
         }
-        append_csv(csv, locations);
-        csv.close();
-        std::cout << energy(state) << std::endl;
-        return EXIT_SUCCESS;
+        advance(state, 0.01);
+        for (auto &body: state) {
+            auto body_location = std::make_tuple(body.name, body.position);
+            locations.push_back(body_location);
+        }
+    }
+    append_csv(csv, locations);
+    csv.close();
+    std::cout << energy(state) << std::endl;
+}
+
+void time_function() {
+    int iterations[] = {5000};
+    for (auto iteration: iterations) {
+        std::string filename = "locations-" + std::to_string(iteration) + ".csv";
+        auto t1 = std::chrono::high_resolution_clock::now();
+        simulate_bodies(iteration, filename.c_str());
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> ms_double = t2 - t1;
+        std::cout << iteration << " iterations, " << ms_double.count() / 1000 << "s\n";
     }
 }
+
+int main(int argc, char **argv) {
+    time_function();
+    return EXIT_SUCCESS;
+}
+
+//int main(int argc, char **argv) {
+//    if (argc != 2) {
+//        std::cout << "This is " << argv[0] << std::endl;
+//        std::cout << "Call this program with an integer as program argument" << std::endl;
+//        std::cout << "(to set the number of iterations for the n-body simulation)." << std::endl;
+//        return EXIT_FAILURE;
+//    } else {
+//        const unsigned int n = atoi(argv[1]);
+//        simulate_bodies(n, FILE_NAME);
+//        return EXIT_SUCCESS;
+//    }
+//}

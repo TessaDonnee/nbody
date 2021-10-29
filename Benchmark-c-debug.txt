@@ -1,0 +1,5 @@
+5000 iterations, 0.0555255s
+50000 iterations, 0.533449s
+500000 iterations, 6.47139s
+5000000 iterations, 62.9405s
+50000000 iterations, 662.539s
